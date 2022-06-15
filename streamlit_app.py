@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import simulation.quris_config as cfg
+#import simulation.quris_config as cfg
 import seaborn as sns
 #sns.set_theme()
 
@@ -11,9 +11,19 @@ import streamlit as st
 #st.set_page_config(layout="wide")
 
 import os
+import pandas_gbq
+
+def validate_well_allocation_is_mutualy_exclusive(plate_measurements, group_col_name):
+    wells_groups = plate_measurements.groupby(group_col_name).well.apply(set).values
+    for i1, g1 in enumerate(wells_groups):
+        for i2, g2 in enumerate(wells_groups):
+            if i1 == i2:
+                continue
+            if len(g1.intersection(g2)) > 0:
+                return False
+    return True
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'braided-course-bigqueryai.json'
-import pandas_gbq
 project_id = "braided-course-312015"
 table_id = 'sensor.data'
 df = pandas_gbq.read_gbq('select * from sensor.data', project_id=project_id)
@@ -72,7 +82,6 @@ if len(set(ms8[(ms8['day'] == 0) & (ms8['compound'] == 'medium')].well)) == 96*l
 else:
     'Failed: Not all wells were measured in medium only on day 0'
 
-from ai.spheroids_experiments.reporting_utils import validate_well_allocation_is_mutualy_exclusive, get_stats_per_sensor
 failed = False
 for plate in plates:
     plate_measurements = ms8[ms8['plate'] == plate]
